@@ -1,0 +1,579 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>棋盘覆盖算法可视化</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        h1 {
+            color: #1a237e;
+            margin-bottom: 10px;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 800px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        label {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background-color: #1976d2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #1565c0;
+        }
+        
+        button:disabled {
+            background-color: #bbdefb;
+            cursor: not-allowed;
+        }
+        
+        input[type="number"] {
+            width: 60px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .slider-container span {
+            width: 30px;
+            text-align: right;
+        }
+        
+        .board-container {
+            position: relative;
+            margin-top: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        #chessboard {
+            display: grid;
+            background-color: #795548;
+            gap: 1px;
+        }
+        
+        .cell {
+            background-color: #f5f1e4;
+            transition: background-color 0.5s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: rgba(0,0,0,0.7);
+        }
+        
+        .special {
+            background-color: #ffeb3b !important;
+        }
+        
+        .type1 { background-color: #e57373; }
+        .type2 { background-color: #64b5f6; }
+        .type3 { background-color: #81c784; }
+        .type4 { background-color: #9575cd; }
+        
+        .log-container {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 800px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 5px;
+        }
+        
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .description {
+            width: 100%;
+            max-width: 800px;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #e8eaf6;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .legend {
+            display: flex;
+            margin-top: 20px;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+        
+        @keyframes highlight {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .highlight {
+            animation: highlight 1s ease;
+            z-index: 10;
+            box-shadow: 0 0 10px 2px white;
+        }
+    </style>
+</head>
+<body>
+    <h1>棋盘覆盖问题可视化</h1>
+    
+    <div class="description">
+        <p>该算法解决经典的棋盘覆盖问题：在一个 2^p × 2^p 的棋盘中，有一个特殊格子已经被占用（公主位置），需要用 L 型骨牌（由3个方格组成的L形）覆盖剩余区域。算法使用分治法，将棋盘分为四个象限，然后递归处理。</p>
+    </div>
+    
+    <div class="controls">
+        <div class="control-group">
+            <label for="size-select">棋盘大小 (2^p)</label>
+            <select id="size-select">
+                <option value="1">2×2</option>
+                <option value="2">4×4</option>
+                <option value="3" selected>8×8</option>
+                <option value="4">16×16</option>
+                <option value="5">32×32</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label for="special-x">公主位置 X:</label>
+            <input type="number" id="special-x" min="1" max="8" value="1">
+        </div>
+        
+        <div class="control-group">
+            <label for="special-y">公主位置 Y:</label>
+            <input type="number" id="special-y" min="1" max="8" value="1">
+        </div>
+        
+        <div class="control-group">
+            <label>动画速度:</label>
+            <div class="slider-container">
+                <input type="range" id="speed-slider" min="1" max="10" value="5">
+                <span id="speed-value">5</span>
+            </div>
+        </div>
+        
+        <button id="start-btn">开始动画</button>
+        <button id="pause-btn" disabled>暂停</button>
+        <button id="reset-btn">重置</button>
+    </div>
+    
+    <div class="board-container">
+        <div id="chessboard"></div>
+    </div>
+    
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color special"></div>
+            <span>特殊位置(公主)</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color type1"></div>
+            <span>L型骨牌类型1</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color type2"></div>
+            <span>L型骨牌类型2</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color type3"></div>
+            <span>L型骨牌类型3</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color type4"></div>
+            <span>L型骨牌类型4</span>
+        </div>
+    </div>
+    
+    <div class="log-container">
+        <h3>执行日志</h3>
+        <div id="log"></div>
+    </div>
+    
+    <script>
+        // 全局变量
+        let animationSpeed = 5;
+        let animationQueue = [];
+        let isPaused = false;
+        let animationTimer = null;
+        let boardSize = 8;
+        let specialX = 1;
+        let specialY = 1;
+        let stepCounter = 0;
+        
+        // DOM 元素
+        const chessboard = document.getElementById('chessboard');
+        const sizeSelect = document.getElementById('size-select');
+        const specialXInput = document.getElementById('special-x');
+        const specialYInput = document.getElementById('special-y');
+        const speedSlider = document.getElementById('speed-slider');
+        const speedValue = document.getElementById('speed-value');
+        const startBtn = document.getElementById('start-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const logContainer = document.getElementById('log');
+        
+        // 初始化棋盘
+        function initBoard() {
+            // 清空棋盘
+            chessboard.innerHTML = '';
+            
+            // 设置棋盘大小
+            const p = parseInt(sizeSelect.value);
+            boardSize = Math.pow(2, p);
+            
+            // 更新公主坐标输入范围
+            specialXInput.max = boardSize;
+            specialYInput.max = boardSize;
+            
+            // 如果公主坐标超出范围，重置为1
+            if (specialX > boardSize) specialXInput.value = specialX = 1;
+            if (specialY > boardSize) specialYInput.value = specialY = 1;
+            
+            // 设置棋盘网格
+            chessboard.style.gridTemplateColumns = `repeat(${boardSize}, 30px)`;
+            chessboard.style.gridTemplateRows = `repeat(${boardSize}, 30px)`;
+            
+            // 创建棋盘格子
+            for (let y = 1; y <= boardSize; y++) {
+                for (let x = 1; x <= boardSize; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.id = `cell-${x}-${y}`;
+                    cell.setAttribute('data-x', x);
+                    cell.setAttribute('data-y', y);
+                    
+                    // 设置公主位置
+                    if (x === specialX && y === specialY) {
+                        cell.classList.add('special');
+                        cell.textContent = 'P';
+                    }
+                    
+                    chessboard.appendChild(cell);
+                }
+            }
+            
+            // 清空日志
+            logContainer.innerHTML = '';
+            addLog(`初始化棋盘: ${boardSize}×${boardSize}, 公主位置: (${specialX}, ${specialY})`);
+            
+            // 重置计数器和动画队列
+            stepCounter = 0;
+            animationQueue = [];
+        }
+        
+        // 添加日志
+        function addLog(message) {
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.textContent = message;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        // 解题算法（模拟solve函数）
+        function generateSolution(x, y, a, b, length, delay = 0) {
+            if (length === 1) return delay;
+            
+            const half = Math.floor(length / 2);
+            let newDelay = delay;
+            
+            // 判断特殊格子在哪个象限
+            if (x - a <= half - 1 && y - b <= half - 1) {
+                // 特殊格子在左上象限
+                const centerX = a + half;
+                const centerY = b + half;
+                animationQueue.push({
+                    type: 'place',
+                    x: centerX,
+                    y: centerY,
+                    tileType: 1,
+                    delay: newDelay
+                });
+                newDelay += 1;
+                
+                // 递归处理四个子象限
+                newDelay = generateSolution(x, y, a, b, half, newDelay);
+                newDelay = generateSolution(a + half - 1, b + half, a, b + half, half, newDelay);
+                newDelay = generateSolution(a + half, b + half - 1, a + half, b, half, newDelay);
+                newDelay = generateSolution(a + half, b + half, a + half, b + half, half, newDelay);
+            } 
+            else if (x - a <= half - 1 && y - b > half - 1) {
+                // 特殊格子在右上象限
+                const centerX = a + half;
+                const centerY = b + half - 1;
+                animationQueue.push({
+                    type: 'place',
+                    x: centerX,
+                    y: centerY,
+                    tileType: 2,
+                    delay: newDelay
+                });
+                newDelay += 1;
+                
+                newDelay = generateSolution(a + half - 1, b + half - 1, a, b, half, newDelay);
+                newDelay = generateSolution(x, y, a, b + half, half, newDelay);
+                newDelay = generateSolution(a + half, b + half - 1, a + half, b, half, newDelay);
+                newDelay = generateSolution(a + half, b + half, a + half, b + half, half, newDelay);
+            } 
+            else if (x - a > half - 1 && y - b <= half - 1) {
+                // 特殊格子在左下象限
+                const centerX = a + half - 1;
+                const centerY = b + half;
+                animationQueue.push({
+                    type: 'place',
+                    x: centerX,
+                    y: centerY,
+                    tileType: 3,
+                    delay: newDelay
+                });
+                newDelay += 1;
+                
+                newDelay = generateSolution(a + half - 1, b + half - 1, a, b, half, newDelay);
+                newDelay = generateSolution(a + half - 1, b + half, a, b + half, half, newDelay);
+                newDelay = generateSolution(x, y, a + half, b, half, newDelay);
+                newDelay = generateSolution(a + half, b + half, a + half, b + half, half, newDelay);
+            } 
+            else {
+                // 特殊格子在右下象限
+                const centerX = a + half - 1;
+                const centerY = b + half - 1;
+                animationQueue.push({
+                    type: 'place',
+                    x: centerX,
+                    y: centerY,
+                    tileType: 4,
+                    delay: newDelay
+                });
+                newDelay += 1;
+                
+                newDelay = generateSolution(a + half - 1, b + half - 1, a, b, half, newDelay);
+                newDelay = generateSolution(a + half - 1, b + half, a, b + half, half, newDelay);
+                newDelay = generateSolution(a + half, b + half - 1, a + half, b, half, newDelay);
+                newDelay = generateSolution(x, y, a + half, b + half, half, newDelay);
+            }
+            
+            return newDelay;
+        }
+        
+        // 放置L型骨牌并高亮显示
+        function placeLTile(x, y, tileType) {
+            stepCounter++;
+            
+            // 根据不同类型的L型骨牌，计算覆盖的三个格子
+            let cells = [];
+            
+            switch (tileType) {
+                case 1: // 左上象限有特殊格子，在其他三个象限交界处放置L型骨牌
+                    cells = [
+                        {x: x, y: y},         // 中心点
+                        {x: x-1, y: y},       // 左边
+                        {x: x, y: y-1}        // 上边
+                    ];
+                    break;
+                case 2: // 右上象限有特殊格子
+                    cells = [
+                        {x: x, y: y},         // 中心点
+                        {x: x-1, y: y},       // 左边
+                        {x: x, y: y+1}        // 下边
+                    ];
+                    break;
+                case 3: // 左下象限有特殊格子
+                    cells = [
+                        {x: x, y: y},         // 中心点
+                        {x: x+1, y: y},       // 右边
+                        {x: x, y: y-1}        // 上边
+                    ];
+                    break;
+                case 4: // 右下象限有特殊格子
+                    cells = [
+                        {x: x, y: y},         // 中心点
+                        {x: x+1, y: y},       // 右边
+                        {x: x, y: y+1}        // 下边
+                    ];
+                    break;
+            }
+            
+            // 给三个格子上色并显示步骤编号
+            cells.forEach(cell => {
+                const cellElement = document.getElementById(`cell-${cell.x}-${cell.y}`);
+                if (cellElement && !cellElement.classList.contains('special')) {
+                    cellElement.classList.add(`type${tileType}`);
+                    cellElement.classList.add('highlight');
+                    cellElement.textContent = stepCounter;
+                    
+                    // 移除高亮效果
+                    setTimeout(() => {
+                        cellElement.classList.remove('highlight');
+                    }, 1000);
+                }
+            });
+            
+            addLog(`步骤 ${stepCounter}: 在位置 (${x}, ${y}) 放置类型 ${tileType} 的L型骨牌`);
+        }
+        
+        // 开始动画
+        function startAnimation() {
+            if (animationQueue.length === 0) return;
+            
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            isPaused = false;
+            
+            processAnimationQueue();
+        }
+        
+        // 处理动画队列
+        function processAnimationQueue() {
+            if (isPaused || animationQueue.length === 0) {
+                if (animationQueue.length === 0) {
+                    startBtn.disabled = true;
+                    pauseBtn.disabled = true;
+                    addLog('动画完成！');
+                }
+                return;
+            }
+            
+            const action = animationQueue.shift();
+            
+            if (action.type === 'place') {
+                placeLTile(action.x, action.y, action.tileType);
+            }
+            
+            // 计算延迟时间，速度越大延迟越短
+            const delay = Math.max(100, 1100 - animationSpeed * 100);
+            
+            animationTimer = setTimeout(processAnimationQueue, delay);
+        }
+        
+        // 暂停动画
+        function pauseAnimation() {
+            isPaused = true;
+            pauseBtn.disabled = true;
+            startBtn.disabled = false;
+            
+            if (animationTimer) {
+                clearTimeout(animationTimer);
+                animationTimer = null;
+            }
+        }
+        
+        // 生成解决方案
+        function generateSolutionAndQueue() {
+            // 清空动画队列
+            animationQueue = [];
+            
+            // 生成解决方案
+            generateSolution(specialX, specialY, 1, 1, boardSize);
+            
+            addLog(`生成了 ${animationQueue.length} 个动画步骤`);
+            startBtn.disabled = false;
+        }
+        
+        // 事件监听器
+        sizeSelect.addEventListener('change', () => {
+            initBoard();
+        });
+        
+        specialXInput.addEventListener('change', () => {
+            specialX = parseInt(specialXInput.value);
+            if (specialX < 1) specialX = specialXInput.value = 1;
+            if (specialX > boardSize) specialX = specialXInput.value = boardSize;
+            initBoard();
+        });
+        
+        specialYInput.addEventListener('change', () => {
+            specialY = parseInt(specialYInput.value);
+            if (specialY < 1) specialY = specialYInput.value = 1;
+            if (specialY > boardSize) specialY = specialYInput.value = boardSize;
+            initBoard();
+        });
+        
+        speedSlider.addEventListener('input', () => {
+            animationSpeed = parseInt(speedSlider.value);
+            speedValue.textContent = animationSpeed;
+        });
+        
+        startBtn.addEventListener('click', () => {
+            if (animationQueue.length === 0) {
+                generateSolutionAndQueue();
+            }
+            startAnimation();
+        });
+        
+        pauseBtn.addEventListener('click', pauseAnimation);
+        
+        resetBtn.addEventListener('click', () => {
+            pauseAnimation();
+            initBoard();
+            animationQueue = [];
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+        });
+        
+        // 初始化
+        initBoard();
+    </script>
+</body>
+</html>
