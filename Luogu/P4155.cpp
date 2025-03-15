@@ -16,6 +16,8 @@ int main() {
     cin.tie(0);
     ios::sync_with_stdio(0);
     cin >> n >> m;
+
+    // 输入数据，并将换断为链
     for(int i=1;i<=n;i++){
         a[i].id = i;
         cin >> a[i].left >> a[i].right;
@@ -24,26 +26,32 @@ int main() {
         }
     }
 
+    // 排序
     sort (a+1, a+n+1, cmp);
     for(int i=1;i<=n;i++){
+        // 将环拆成链
         a[i+n].left = a[i].left + m;
         a[i+n].right = a[i].right + m;
     }
-    for(int i=1, j =i;i<=2*n;i++){
+    // 倍增初始化
+    for(int i=1,j=i;i<=2*n;i++){
         while(j<=2*n && a[j].left <= a[i].right){
             j++;
         }
         go[i][0] = j-1;
     }
-
+    // 倍增 发现 go[i][j] = go[go[i][j-1]][j-1]
     for(int j=1; j<20;j++){
         for(int i=1;i+(1<<j)-1<=2*n;i++){
             go[i][j] = go[go[i][j-1]][j-1];
         }
     }
+    // 枚举起点
     for(int start =1; start <=n; start ++){
         int t=start;
         int cnt = 1;
+
+        // 倍增找到最远的点
         for(int x=19;x>=0;x--){
             int end = go[t][x];
             if(end !=0 && a[end].right - a[start].left + 1 <= m){
