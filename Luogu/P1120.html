@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P1120 木棍拼接算法可视化</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .control-panel {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+        .visualization {
+            display: flex;
+            gap: 20px;
+        }
+        .tree-container {
+            flex: 2;
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            overflow: auto;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+        .state-container {
+            flex: 1;
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        .state-info {
+            margin-bottom: 15px;
+        }
+        .sticks-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        .stick {
+            height: 20px;
+            background-color: #a5843d;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+        }
+        .used {
+            background-color: #6c757d;
+            opacity: 0.5;
+        }
+        .current-selection {
+            background-color: #28a745;
+        }
+        .rejected {
+            background-color: #dc3545;
+        }
+        .current-stick-row {
+            height: 30px;
+            margin-bottom: 10px;
+            border: 1px dashed #ccc;
+            display: flex;
+            align-items: flex-end;
+        }
+        .target-length {
+            border-left: 2px dashed red;
+            height: 100%;
+            position: absolute;
+        }
+        .tree-node {
+            margin: 5px 0;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            position: relative;
+        }
+        .tree-node.active {
+            background-color: #e9f7e9;
+            border-left: 4px solid #28a745;
+        }
+        .tree-node.backtrack {
+            background-color: #f9e9e9;
+            border-left: 4px solid #dc3545;
+        }
+        .tree-node.success {
+            background-color: #e1f7e1;
+            border-left: 4px solid #28a745;
+        }
+        .tree-children {
+            margin-left: 20px;
+            border-left: 1px solid #ddd;
+            padding-left: 15px;
+        }
+        .log-container {
+            margin-top: 20px;
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            height: 150px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            font-size: 14px;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 5px;
+        }
+        .input-section {
+            margin-bottom: 20px;
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        input, select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .success-indicator {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .failure-indicator {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .horizontal-tree {
+            display: flex;
+            overflow-x: auto;
+            padding: 20px 0;
+            min-height: 500px;
+        }
+        .tree-level {
+            display: flex;
+            flex-direction: column;
+            margin-right: 15px;
+            min-width: 220px;
+            border-right: 1px dashed #ccc;
+            padding-right: 15px;
+        }
+        .tree-level-title {
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .tree-node {
+            margin: 5px 0;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 14px;
+            word-break: break-word;
+            border-left: 4px solid transparent;
+        }
+        .view-toggle {
+            margin-bottom: 10px;
+            text-align: right;
+        }
+        .node-id {
+            font-size: 10px;
+            color: #888;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>P1120 木棍拼接算法可视化</h1>
+            <p>本可视化展示DFS算法如何拼接小木棍成为长度相等的几根木棍</p>
+        </div>
+
+        <div class="input-section">
+            <h3>输入参数</h3>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <input type="text" id="sticks-input" placeholder="输入木棍长度，用空格分隔" style="flex: 1;">
+                <button id="set-sticks">设置木棍</button>
+            </div>
+            <div id="example-inputs">
+                <button class="example">示例1: 5 2 1 5 2 1 5 2 1</button>
+                <button class="example">示例2: 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20</button>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <button id="start-btn">开始模拟</button>
+            <button id="step-btn">单步执行</button>
+            <button id="reset-btn">重置</button>
+            <div class="speed-control">
+                <label for="speed">速度:</label>
+                <select id="speed">
+                    <option value="1000">慢</option>
+                    <option value="500" selected>中</option>
+                    <option value="200">快</option>
+                    <option value="50">极快</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="visualization">
+            <div class="tree-container" id="recursion-tree">
+                <div class="view-toggle">
+                    <button id="toggle-view">切换到水平视图</button>
+                </div>
+                <h3>DFS递归树</h3>
+                <div id="tree-content"></div>
+            </div>
+            <div class="state-container">
+                <h3>当前状态</h3>
+                <div class="state-info">
+                    <div><strong>木棍总数:</strong> <span id="total-sticks">0</span></div>
+                    <div><strong>总长度:</strong> <span id="total-length">0</span></div>
+                    <div><strong>目标棍数:</strong> <span id="target-sticks">0</span></div>
+                    <div><strong>目标长度:</strong> <span id="target-length">0</span></div>
+                    <div><strong>当前已完成:</strong> <span id="completed-sticks">0</span></div>
+                    <div><strong>当前棍子累计长度:</strong> <span id="current-sum">0</span></div>
+                </div>
+
+                <h4>木棍状态</h4>
+                <div class="sticks-container" id="sticks-visualization"></div>
+
+                <h4>当前正在拼接的棍子</h4>
+                <div class="current-stick-row" id="current-stick">
+                    <div class="target-length" id="target-marker"></div>
+                </div>
+
+                <div class="log-container">
+                    <h4>执行日志</h4>
+                    <div id="log-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 算法状态
+        let sticks = []; // 木棍数组
+        let totalLength = 0; // 木棍总长度
+        let targetLength = 0; // 目标长度
+        let targetStickCount = 0; // 目标棍数
+        let visited = []; // 已使用的木棍
+        let running = false; // 是否正在运行
+        let speed = 500; // 模拟速度(ms)
+        let treeNodeId = 0; // 递归树节点ID
+        let currentNodes = []; // 当前活跃的节点
+        let treeRoot = null; // 递归树根节点
+        let simulationInterval = null; // 模拟间隔ID
+        let simulationQueue = []; // 模拟队列
+        let currentSimulationStep = null; // 当前模拟步骤
+        let treeViewMode = 'horizontal'; // 'vertical' or 'horizontal'
+        let maxDepth = 0;
+        let depthNodes = [];
+
+        // 界面元素
+        const startBtn = document.getElementById('start-btn');
+        const stepBtn = document.getElementById('step-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const speedSelect = document.getElementById('speed');
+        const sticksInput = document.getElementById('sticks-input');
+        const setSticksBtn = document.getElementById('set-sticks');
+        const exampleBtns = document.querySelectorAll('.example');
+        const treeContent = document.getElementById('tree-content');
+        const sticksVisualization = document.getElementById('sticks-visualization');
+        const currentStickDiv = document.getElementById('current-stick');
+        const logContent = document.getElementById('log-content');
+
+        // 状态显示元素
+        const totalSticksElem = document.getElementById('total-sticks');
+        const totalLengthElem = document.getElementById('total-length');
+        const targetSticksElem = document.getElementById('target-sticks');
+        const targetLengthElem = document.getElementById('target-length');
+        const completedSticksElem = document.getElementById('completed-sticks');
+        const currentSumElem = document.getElementById('current-sum');
+        const targetMarker = document.getElementById('target-marker');
+
+        // 初始化示例按钮
+        exampleBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const example = btn.textContent.split(':')[1].trim();
+                sticksInput.value = example;
+            });
+        });
+
+        // 设置木棍按钮
+        setSticksBtn.addEventListener('click', () => {
+            const input = sticksInput.value.trim();
+            if (input) {
+                setupSticks(input.split(/\s+/).map(Number));
+                resetSimulation();
+                updateUI();
+            }
+        });
+
+        // 速度选择
+        speedSelect.addEventListener('change', () => {
+            speed = parseInt(speedSelect.value);
+        });
+
+        // 开始按钮
+        startBtn.addEventListener('click', () => {
+            if (sticks.length === 0) return;
+
+            if (running) {
+                clearInterval(simulationInterval);
+                startBtn.textContent = '继续模拟';
+                running = false;
+            } else {
+                startBtn.textContent = '暂停';
+                running = true;
+                runSimulation();
+            }
+        });
+
+        // 单步执行按钮
+        stepBtn.addEventListener('click', () => {
+            if (sticks.length === 0) return;
+            if (running) {
+                clearInterval(simulationInterval);
+                startBtn.textContent = '继续模拟';
+                running = false;
+            }
+            processNextStep();
+        });
+
+        // 重置按钮
+        resetBtn.addEventListener('click', () => {
+            resetSimulation();
+        });
+
+        // 设置木棍函数
+        function setupSticks(sticksArray) {
+            sticks = sticksArray.filter(s => s > 0).sort((a, b) => b - a); // 降序排序
+            totalLength = sticks.reduce((sum, len) => sum + len, 0);
+            visited = new Array(sticks.length).fill(0);
+            
+            // 找到最大可能的目标长度
+            for (let i = totalLength; i > 0; i--) {
+                if (totalLength % i === 0) {
+                    targetLength = totalLength / i;
+                    targetStickCount = i;
+                    if (sticks[0] <= targetLength) { // 最长的木棍不能超过目标长度
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 重置模拟
+        function resetSimulation() {
+            clearInterval(simulationInterval);
+            running = false;
+            startBtn.textContent = '开始模拟';
+            visited = new Array(sticks.length).fill(0);
+            treeNodeId = 0;
+            currentNodes = [];
+            treeRoot = null;
+            simulationQueue = [];
+            currentSimulationStep = null;
+            
+            // 清空UI
+            treeContent.innerHTML = '';
+            sticksVisualization.innerHTML = '';
+            currentStickDiv.innerHTML = '<div class="target-length" id="target-marker"></div>';
+            logContent.innerHTML = '';
+            
+            // 如果已设置木棍，则初始化DFS根节点
+            if (sticks.length > 0) {
+                treeRoot = createTreeNode("开始DFS(0, 0, 0)", null);
+                treeContent.appendChild(treeRoot.element);
+                
+                // 创建初始步骤
+                simulationQueue.push({
+                    type: 'call',
+                    node: treeRoot,
+                    params: {
+                        cnt: 0,
+                        start: 0,
+                        currSum: 0
+                    }
+                });
+            }
+            
+            // 刷新目标长度标记
+            updateTargetMarker();
+            updateUI();
+        }
+
+        // 创建树节点
+        function createTreeNode(text, parent) {
+            const id = treeNodeId++;
+            const nodeDiv = document.createElement('div');
+            nodeDiv.className = 'tree-node';
+            nodeDiv.id = `node-${id}`;
+            nodeDiv.textContent = text;
+            
+            const childrenDiv = document.createElement('div');
+            childrenDiv.className = 'tree-children';
+            childrenDiv.id = `children-${id}`;
+            
+            const node = {
+                id,
+                element: nodeDiv,
+                childrenContainer: childrenDiv,
+                children: [],
+                parent,
+                text
+            };
+            
+            nodeDiv.appendChild(childrenDiv);
+            
+            if (parent) {
+                parent.children.push(node);
+            }
+            
+            return node;
+        }
+
+        // 更新UI
+        function updateUI() {
+            // 更新状态信息
+            totalSticksElem.textContent = sticks.length;
+            totalLengthElem.textContent = totalLength;
+            targetSticksElem.textContent = targetStickCount;
+            targetLengthElem.textContent = targetLength;
+            
+            // 更新木棍可视化
+            updateSticksVisualization();
+        }
+
+        // 更新木棍可视化
+        function updateSticksVisualization() {
+            sticksVisualization.innerHTML = '';
+            
+            sticks.forEach((length, index) => {
+                const stickDiv = document.createElement('div');
+                stickDiv.className = `stick ${visited[index] ? 'used' : ''}`;
+                stickDiv.style.width = `${Math.max(20, length * 20)}px`;
+                stickDiv.textContent = length;
+                stickDiv.id = `stick-${index}`;
+                sticksVisualization.appendChild(stickDiv);
+            });
+        }
+
+        // 更新当前棍子可视化
+        function updateCurrentStick(currSum) {
+            currentStickDiv.innerHTML = '<div class="target-length" id="target-marker"></div>';
+            currentSumElem.textContent = currSum;
+            
+            if (currSum > 0) {
+                const currentPartDiv = document.createElement('div');
+                currentPartDiv.className = 'stick';
+                currentPartDiv.style.width = `${currSum * 20}px`;
+                currentPartDiv.textContent = currSum;
+                currentStickDiv.appendChild(currentPartDiv);
+            }
+            
+            updateTargetMarker();
+        }
+
+        // 更新目标长度标记
+        function updateTargetMarker() {
+            const marker = document.getElementById('target-marker');
+            if (marker) {
+                marker.style.left = `${targetLength * 20}px`;
+            }
+        }
+
+        // 添加日志
+        function addLog(text, type = 'info') {
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.textContent = text;
+            logContent.prepend(logEntry);
+            
+            // 限制日志数量
+            if (logContent.children.length > 50) {
+                logContent.removeChild(logContent.lastChild);
+            }
+        }
+
+        // 运行模拟
+        function runSimulation() {
+            if (!running) return;
+            
+            simulationInterval = setInterval(() => {
+                if (!processNextStep()) {
+                    clearInterval(simulationInterval);
+                    running = false;
+                    startBtn.textContent = '开始模拟';
+                }
+            }, speed);
+        }
+
+        // 处理下一个模拟步骤
+        function processNextStep() {
+            if (simulationQueue.length === 0) {
+                return false;
+            }
+            
+            const step = simulationQueue.shift();
+            currentSimulationStep = step;
+            
+            switch (step.type) {
+                case 'call':
+                    processCallStep(step);
+                    break;
+                case 'try':
+                    processTryStep(step);
+                    break;
+                case 'backtrack':
+                    processBacktrackStep(step);
+                    break;
+                case 'return':
+                    processReturnStep(step);
+                    break;
+            }
+            
+            return true;
+        }
+
+        // 处理调用步骤
+        function processCallStep(step) {
+            const { node, params } = step;
+            const { cnt, start, currSum } = params;
+            
+            // 更新UI
+            highlightNode(node);
+            updateCurrentStick(currSum);
+            completedSticksElem.textContent = cnt;
+            
+            addLog(`调用DFS(${cnt}, ${start}, ${currSum})`);
+            
+            // 检查是否完成
+            if (cnt * targetLength === totalLength) {
+                const resultNode = createTreeNode(`DFS(${cnt}, ${start}, ${currSum}) -> 成功：所有木棍都已使用完`, node);
+                node.childrenContainer.appendChild(resultNode.element);
+                resultNode.element.classList.add('success');
+                
+                simulationQueue.push({
+                    type: 'return',
+                    node: resultNode,
+                    result: true,
+                    params
+                });
+                
+                addLog(`找到解决方案! 每根木棍长度 = ${targetLength}`, 'success');
+                return;
+            }
+            
+            // 检查是否完成当前木棍
+            if (currSum === targetLength) {
+                const nextNode = createTreeNode(`完成一根木棍，开始下一根：DFS(${cnt+1}, 0, 0)`, node);
+                node.childrenContainer.appendChild(nextNode.element);
+                
+                simulationQueue.push({
+                    type: 'call',
+                    node: nextNode,
+                    params: {
+                        cnt: cnt + 1,
+                        start: 0,
+                        currSum: 0
+                    }
+                });
+                
+                addLog(`完成了第${cnt+1}根木棍，开始拼接下一根`);
+                return;
+            }
+            
+            // 尝试每根木棍
+            let hasValidTry = false;
+            
+            for (let i = start; i < sticks.length; i++) {
+                // 跳过已使用的木棍
+                if (visited[i]) continue;
+                
+                // 超长跳过
+                if (currSum + sticks[i] > targetLength) continue;
+                
+                // 剪枝：相同长度的木棍，选择第一个尝试即可
+                if (i > 0 && sticks[i] === sticks[i-1] && !visited[i-1]) continue;
+                
+                hasValidTry = true;
+                
+                simulationQueue.push({
+                    type: 'try',
+                    node: node,
+                    stick: i,
+                    params: {
+                        ...params,
+                        nextParams: {
+                            cnt,
+                            start: i + 1,
+                            currSum: currSum + sticks[i]
+                        }
+                    }
+                });
+            }
+            
+            if (!hasValidTry) {
+                simulationQueue.push({
+                    type: 'return',
+                    node: node,
+                    result: false,
+                    params
+                });
+                
+                addLog(`没有可用的木棍组合，回溯`);
+            }
+        }
+
+        // 处理尝试步骤
+        function processTryStep(step) {
+            const { node, stick, params } = step;
+            const { nextParams } = params;
+            
+            // 标记木棍为已使用
+            visited[stick] = 1;
+            
+            // 更新UI
+            updateSticksVisualization();
+            document.getElementById(`stick-${stick}`).classList.add('current-selection');
+            
+            const tryNode = createTreeNode(`尝试使用木棍#${stick} (长度=${sticks[stick]})`, node);
+            node.childrenContainer.appendChild(tryNode.element);
+            
+            const dfsNode = createTreeNode(`DFS(${nextParams.cnt}, ${nextParams.start}, ${nextParams.currSum})`, tryNode);
+            tryNode.childrenContainer.appendChild(dfsNode.element);
+            
+            addLog(`尝试使用长度为${sticks[stick]}的木棍`);
+            
+            simulationQueue.push({
+                type: 'call',
+                node: dfsNode,
+                params: nextParams
+            });
+            
+            // 保存回溯信息
+            simulationQueue.push({
+                type: 'backtrack',
+                node: tryNode,
+                stick,
+                params,
+                tried: true
+            });
+        }
+
+        // 处理回溯步骤
+        function processBacktrackStep(step) {
+            const { node, stick, params, result, tried } = step;
+            
+            if (tried && !result) {
+                // 回溯操作
+                visited[stick] = 0;
+                updateSticksVisualization();
+                
+                node.element.classList.add('backtrack');
+                
+                const { cnt, currSum } = params;
+                
+                // 添加剪枝信息
+                if (currSum === 0 || currSum + sticks[stick] === targetLength) {
+                    const pruneNode = createTreeNode(`剪枝：${currSum === 0 ? '当前边的第一个木棍失败' : '拼接后刚好等于目标长度失败'}`, node);
+                    node.childrenContainer.appendChild(pruneNode.element);
+                    pruneNode.element.classList.add('backtrack');
+                    
+                    // 立即返回false
+                    simulationQueue.unshift({
+                        type: 'return',
+                        node: pruneNode,
+                        result: false,
+                        params
+                    });
+                    
+                    addLog(`应用剪枝，${currSum === 0 ? '当前边的第一个木棍失败' : '拼接后刚好等于目标长度失败'}`);
+                    return;
+                }
+                
+                addLog(`回溯：取消使用长度为${sticks[stick]}的木棍`);
+                
+                // 跳过相同长度的木棍
+                let i = stick;
+                let skipped = false;
+                while (i+1 < sticks.length && sticks[i+1] === sticks[i]) {
+                    i++;
+                    skipped = true;
+                }
+                
+                if (skipped) {
+                    const skipNode = createTreeNode(`跳过相同长度的木棍`, node);
+                    node.childrenContainer.appendChild(skipNode.element);
+                    addLog(`跳过相同长度的木棍`);
+                }
+            }
+        }
+
+        // 处理返回步骤
+        function processReturnStep(step) {
+            const { node, result, params } = step;
+            
+            highlightNode(node);
+            
+            if (result) {
+                node.element.classList.add('success');
+                addLog(`DFS返回：成功`);
+            } else {
+                node.element.classList.add('backtrack');
+                addLog(`DFS返回：失败`);
+            }
+            
+            // 向上传递结果
+            if (node.parent && node.parent.parent) {
+                simulationQueue.unshift({
+                    type: 'backtrack',
+                    node: node.parent,
+                    stick: -1,
+                    params,
+                    result
+                });
+            }
+        }
+
+        // 高亮节点
+        function highlightNode(node) {
+            // 清除所有当前活跃节点的高亮
+            currentNodes.forEach(n => {
+                n.element.classList.remove('active');
+            });
+            
+            // 设置新的活跃节点
+            currentNodes = [node];
+            node.element.classList.add('active');
+            
+            // 滚动到节点
+            node.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function updateTreeContainerHTML() {
+            const treeContainer = document.getElementById('recursion-tree');
+            treeContainer.innerHTML = `
+                <div class="view-toggle">
+                    <button id="toggle-view">${treeViewMode === 'horizontal' ? '切换到垂直视图' : '切换到水平视图'}</button>
+                </div>
+                <h3>DFS递归树</h3>
+                <div id="tree-content" class="${treeViewMode === 'horizontal' ? 'horizontal-tree' : ''}"></div>
+            `;
+            document.getElementById('toggle-view').addEventListener('click', toggleTreeView);
+        }
+
+        function toggleTreeView() {
+            treeViewMode = treeViewMode === 'horizontal' ? 'vertical' : 'horizontal';
+            updateTreeContainerHTML();
+            redrawTree();
+        }
+
+        function redrawTree() {
+            const treeContent = document.getElementById('tree-content');
+            treeContent.innerHTML = '';
+            if (treeViewMode === 'horizontal') {
+                depthNodes = [];
+                calculateNodeDepths(treeRoot, 0);
+                for (let depth = 0; depth <= maxDepth; depth++) {
+                    const levelDiv = document.createElement('div');
+                    levelDiv.className = 'tree-level';
+                    levelDiv.id = `level-${depth}`;
+                    const titleDiv = document.createElement('div');
+                    titleDiv.className = 'tree-level-title';
+                    titleDiv.textContent = `深度 ${depth}`;
+                    levelDiv.appendChild(titleDiv);
+                    treeContent.appendChild(levelDiv);
+                }
+                depthNodes.forEach((nodes, depth) => {
+                    const levelDiv = document.getElementById(`level-${depth}`);
+                    nodes.forEach(node => {
+                        const nodeDiv = document.createElement('div');
+                        nodeDiv.className = `tree-node ${node.element.className.replace('tree-node', '')}`;
+                        nodeDiv.id = node.element.id;
+                        const nodeIdSpan = document.createElement('span');
+                        nodeIdSpan.className = 'node-id';
+                        nodeIdSpan.textContent = `#${node.id}`;
+                        nodeDiv.appendChild(nodeIdSpan);
+                        nodeDiv.appendChild(document.createTextNode(node.text));
+                        levelDiv.appendChild(nodeDiv);
+                        node.horizontalElement = nodeDiv;
+                    });
+                });
+            } else {
+                if (treeRoot) {
+                    treeContent.appendChild(treeRoot.element);
+                }
+            }
+            highlightActiveNodes();
+        }
+
+        function calculateNodeDepths(node, depth) {
+            if (!node) return;
+            if (!depthNodes[depth]) {
+                depthNodes[depth] = [];
+            }
+            depthNodes[depth].push(node);
+            maxDepth = Math.max(maxDepth, depth);
+            node.children.forEach(child => {
+                calculateNodeDepths(child, depth + 1);
+            });
+        }
+
+        function highlightActiveNodes() {
+            currentNodes.forEach(node => {
+                if (node.element) node.element.classList.add('active');
+                if (node.horizontalElement) node.horizontalElement.classList.add('active');
+                if (treeViewMode === 'horizontal' && node.horizontalElement) {
+                    const level = document.getElementById(`level-${node.depth}`);
+                    if (level) {
+                        level.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                    node.horizontalElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else if (node.element) {
+                    node.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+        }
+
+        updateTreeContainerHTML();
+        resetSimulation();
+    </script>
+</body>
+</html>

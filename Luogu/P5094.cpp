@@ -50,6 +50,7 @@ int main(){
         prefix_x += x;
     }
     
+    
     // 构造四个树状数组，大小均为 MAXV
     Fenw bitCount(MAXV), bitSumV(MAXV), bitSumX(MAXV), bitSumVX(MAXV);
     

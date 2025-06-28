@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>动态可视化算法递归树</title>
+  <!-- 引入 D3.js 库 -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    .node circle {
+      fill: #fff;
+      stroke: steelblue;
+      stroke-width: 3px;
+    }
+    .node text {
+      font: 12px sans-serif;
+    }
+    .link {
+      fill: none;
+      stroke: #ccc;
+      stroke-width: 2px;
+    }
+  </style>
+</head>
+<body>
+  <h2>CF525E Anya and Cubes 递归树动态可视化</h2>
+  <p>
+    该示例展示了部分 DFS 递归树。每个节点的文本格式为：<br>
+    <code>状态 (index, sum, used)</code><br>
+    状态说明：<br>
+    - “不选”：不选择当前数字<br>
+    - “选（无! 选）”：选择当前数字但不使用感叹号<br>
+    - “选（使用!）”：选择当前数字并使用感叹号<br>
+    递归过程中，每个节点代表一个状态，动画会依次高亮遍历的节点。
+  </p>
+  <div id="tree-container"></div>
+  <script>
+    // 示例递归树数据（仅为模拟，实际递归树会更大）
+    // 每个节点代表一个状态，格式：name = "状态 (index, sum, used)"
+    // 例如：根节点表示初始状态 (index:0, sum:0, used:0)
+    const treeData = {
+      name: "root (index:0, sum:0, used:0)",
+      children: [
+        { 
+          name: "不选 (index:1, sum:0, used:0)", 
+          children: [
+            { name: "不选 (index:2, sum:0, used:0)" },
+            { name: "选（无! 选） (index:2, sum: a1, used:0)" },
+            { name: "选（使用!） (index:2, sum: a1!, used:1)" }
+          ]
+        },
+        { 
+          name: "选（无! 选） (index:1, sum: a0, used:0)",
+          children: [
+            { name: "不选 (index:2, sum: a0, used:0)" },
+            { name: "选（无! 选） (index:2, sum: a0+a1, used:0)" },
+            { name: "选（使用!） (index:2, sum: a0+a1!, used:1)" }
+          ]
+        },
+        { 
+          name: "选（使用!） (index:1, sum: a0!, used:1)",
+          children: [
+            { name: "不选 (index:2, sum: a0!, used:1)" },
+            { name: "选（无! 选） (index:2, sum: a0!+a1, used:1)" }
+          ]
+        }
+      ]
+    };
+
+    // 设置 SVG 画布尺寸
+    const width = 960;
+    const height = 600;
+
+    // 在指定容器中创建一个 SVG 元素
+    const svg = d3.select("#tree-container")
+                  .append("svg")
+                  .attr("width", width)
+                  .attr("height", height)
+                  .append("g")
+                  .attr("transform", "translate(50,50)");
+
+    // 使用 d3.tree 布局，定义画布中树的大小
+    const treeLayout = d3.tree().size([width - 100, height - 100]);
+
+    // 构造层次数据（Hierarchy）
+    let root = d3.hierarchy(treeData);
+    treeLayout(root);
+
+    // 绘制连线（link）
+    svg.selectAll(".link")
+       .data(root.links())
+       .enter()
+       .append("path")
+       .attr("class", "link")
+       .attr("d", d3.linkHorizontal()
+            .x(function(d) { return d.y; })
+            .y(function(d) { return d.x; })
+       );
+
+    // 绘制节点（node）
+    const node = svg.selectAll(".node")
+                    .data(root.descendants())
+                    .enter()
+                    .append("g")
+                    .attr("class", "node")
+                    .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
+
+    // 每个节点绘制一个圆圈
+    node.append("circle")
+        .attr("r", 20);
+
+    // 在节点旁边添加文本描述状态
+    node.append("text")
+        .attr("dy", ".35em")
+        .attr("x", function(d) { return d.children ? -25 : 25; })
+        .style("text-anchor", function(d) { return d.children ? "end" : "start"; })
+        .text(function(d) { return d.data.name; });
+
+    // 动画：模拟递归遍历时节点的高亮显示
+    function highlightNode(selection, delay) {
+      selection.transition()
+               .delay(delay)
+               .duration(1000)
+               .select("circle")
+               .attr("fill", "orange")
+               .transition()
+               .duration(1000)
+               .attr("fill", "#fff");
+    }
+
+    // 对递归树中每个节点按遍历顺序依次添加动画高亮效果
+    root.descendants().forEach(function(d, i) {
+      // 使用 setTimeout 模拟顺序执行，每个节点延时 800 毫秒
+      setTimeout(function() {
+        highlightNode(d3.selectAll(".node").filter(function(n) { return n === d; }), 0);
+      }, i * 800);
+    });
+  </script>
+</body>
+</html>

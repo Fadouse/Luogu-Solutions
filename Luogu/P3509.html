@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Algorithm Visualizer - P3509</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .array-container {
+            display: flex;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+        .array-element {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 2px;
+            position: relative;
+        }
+        .pointer {
+            position: absolute;
+            top: -20px;
+            width: 100%;
+            text-align: center;
+            font-size: 12px;
+            color: #e44d26;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        .highlight {
+            background-color: #ffeb3b;
+        }
+        .active {
+            background-color: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>P3509 Algorithm Visualization</h1>
+    
+    <div class="controls">
+        <input type="number" id="n" placeholder="n" value="5">
+        <input type="number" id="k" placeholder="k" value="2">
+        <input type="number" id="m" placeholder="m" value="1">
+        <button onclick="initialize()">Initialize</button>
+        <button onclick="step()">Step</button>
+        <button onclick="run()">Run</button>
+        <button onclick="reset()">Reset</button>
+    </div>
+
+    <div id="arrayContainer" class="array-container"></div>
+    <div id="next1Container" class="array-container"></div>
+    <div id="ansContainer" class="array-container"></div>
+
+    <script>
+        let n, k, m;
+        let a = [];
+        let next1 = [];
+        let ans = [];
+        let currentStep = 0;
+        let interval;
+
+        function initialize() {
+            n = parseInt(document.getElementById('n').value);
+            k = parseInt(document.getElementById('k').value);
+            m = parseInt(document.getElementById('m').value);
+            
+            // Initialize arrays
+            a = Array(n + 1).fill(0);
+            next1 = Array(n + 1).fill(0);
+            ans = Array(n + 1).fill(0);
+
+            // Generate random sorted array
+            for(let i = 1; i <= n; i++) {
+                a[i] = i * 2; // Simple sorted array for demonstration
+                ans[i] = i;
+            }
+
+            // Calculate next1 array
+            calculateNext1();
+            
+            updateVisualization();
+        }
+
+        function calculateNext1() {
+            for(let i = 1; i <= n; i++) {
+                let left = 1;
+                let right = k + 1;
+                while(right + 1 <= n && a[right + 1] - a[i] < a[i] - a[left]) {
+                    right++;
+                    left++;
+                }
+                next1[i] = (a[right] - a[i] > a[i] - a[left]) ? right : left;
+            }
+        }
+
+        function step() {
+            if(m > 0) {
+                if(m & 1) {
+                    for(let i = 1; i <= n; i++) {
+                        ans[i] = next1[ans[i]];
+                    }
+                }
+                m = m >> 1;
+                let next2 = [...next1];
+                for(let i = 1; i <= n; i++) {
+                    next1[i] = next2[next1[i]];
+                }
+                updateVisualization();
+            }
+        }
+
+        function run() {
+            clearInterval(interval);
+            interval = setInterval(() => {
+                if(m > 0) {
+                    step();
+                } else {
+                    clearInterval(interval);
+                }
+            }, 1000);
+        }
+
+        function reset() {
+            clearInterval(interval);
+            initialize();
+        }
+
+        function updateVisualization() {
+            const arrayContainer = document.getElementById('arrayContainer');
+            const next1Container = document.getElementById('next1Container');
+            const ansContainer = document.getElementById('ansContainer');
+
+            arrayContainer.innerHTML = '<div style="margin-right: 10px">Array:</div>';
+            next1Container.innerHTML = '<div style="margin-right: 10px">Next1:</div>';
+            ansContainer.innerHTML = '<div style="margin-right: 10px">Ans:</div>';
+
+            for(let i = 1; i <= n; i++) {
+                arrayContainer.innerHTML += `
+                    <div class="array-element">${a[i]}</div>
+                `;
+                next1Container.innerHTML += `
+                    <div class="array-element">${next1[i]}</div>
+                `;
+                ansContainer.innerHTML += `
+                    <div class="array-element">${ans[i]}</div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
